@@ -38,18 +38,20 @@ type Nebula struct {
 	sqlquerys *singlylinkedlist.List
 }
 type Sqlquery struct {
-	Env          string   `toml:"env"`
-	Address      string   `toml:"address"`
-	Port         int      `toml:"port"`
-	Username     string   `toml:"username"`
-	Password     string   `toml:"password"`
-	UseHTTP2     bool     `toml:"useHTTP2"`
-	Spacename    string   `toml:"spacename"`
-	Sql_script   string   `toml:"sql_script"`
-	Metrics_name string   `toml:"metrics_name"`
-	Labels_names []string `toml:"labels_names"`
-	Values_names []string `toml:"values_names"`
+	Env            string             `toml:"env"`
+	Address        string             `toml:"address"`
+	Port           int                `toml:"port"`
+	Username       string             `toml:"username"`
+	Password       string             `toml:"password"`
+	UseHTTP2       bool               `toml:"useHTTP2"`
+	Spacename      string             `toml:"spacename"`
+	Sql_script     string             `toml:"sql_script"`
+	Metrics_name   string             `toml:"metrics_name"`
+	Labels_names   []string           `toml:"labels_names"`
+	Values_names   []string           `toml:"values_names"`
+	Values_mapping map[string]float64 `toml:"values_mapping"`
 }
+
 type Instance struct {
 	Env         string   `toml:"env"`
 	List        []string `toml:"list"`
@@ -231,7 +233,6 @@ func (sql *Sqlquery) FetchForNSql(nsql string) ([]MetricsData, error) {
 	var resultSet *nebula_client.ResultSet
 	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-
 		resultSet, err = sessionPool.Execute(nsql)
 		if err != nil {
 			fmt.Print(err.Error())
@@ -255,7 +256,7 @@ func (sql *Sqlquery) FetchForNSql(nsql string) ([]MetricsData, error) {
 		// host, err := record.GetValueByIndex(0)
 		if len(sql.Labels_names) == 0 {
 			labels["host"] = sql.Address
-		})
+		}
 		for _, label := range sql.Labels_names {
 			label_value, err := record.GetValueByColName(label)
 			if err != nil {
@@ -275,6 +276,15 @@ func (sql *Sqlquery) FetchForNSql(nsql string) ([]MetricsData, error) {
 			}
 			value_string := value_spr.String()
 			value, err := strconv.ParseFloat(value_string, 64)
+			if err != nil {
+				strValue_a := strings.Trim(value_string, `"`)
+				if _, ok := sql.Values_mapping[strValue_a]; ok {
+					value = sql.Values_mapping[strValue_a]
+				} else {
+					fmt.Println("The value indicator is not of numeric type, and the mapping table matching failed. The failed matching items are", strValue_a)
+					continue
+				}
+			}
 			metricsData.Value = value
 			metricsData.LabelPair = labels
 			dataList = append(dataList, metricsData)

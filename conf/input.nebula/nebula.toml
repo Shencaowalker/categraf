@@ -1,5 +1,19 @@
 [[sqlquerys]]
 env = "demo"
+address="10.5.16.131"
+port= 9669
+username = "root"
+password = "nebula"
+useHTTP2 = false
+spacename = "bigmetademonew"
+sql_script = "show hosts meta"
+metrics_name="cluster_metad_status"
+labels_names= [ "Host","Port","Role","Git Info Sha","Version"]
+values_names=["Status"]
+values_mapping = {ONLINE = 1,OFFLINE = 0}
+
+[[sqlquerys]]
+env = "test"
 address="10.5.100.1"
 port= 9669
 username = "root"
@@ -10,6 +24,7 @@ sql_script = "show hosts"
 metrics_name="cluster_status"
 labels_names= [ "Host","Status","Leader distribution","Partition distribution","Version"]
 values_names=["Leader count"]
+values_mapping = {OFFLINE = 0}
 
 
 [[instances]]
