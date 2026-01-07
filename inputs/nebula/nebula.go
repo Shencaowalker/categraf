@@ -30,6 +30,8 @@ const (
 	inputName = "nebula"
 )
 
+var labelReplacer = strings.NewReplacer("-", "_", ".", "_", " ", "_", "/", "_")
+
 type Nebula struct {
 	config.PluginConfig
 	Instances []Instance `toml:"instances"`
@@ -267,13 +269,13 @@ func (sql *Sqlquery) FetchForNSql(nsql string) ([]MetricsData, error) {
 		}
 
 		for _, valuename := range sql.Values_names {
-			metricsData := MetricsData{}
-			metricsData.Name = "nebula_sqlquery_" + sql.Metrics_name
 			value_spr, err := record.GetValueByColName(valuename)
 			if err != nil {
 				fmt.Print(err.Error())
-				return dataList, err
+				continue
 			}
+			metricsData := MetricsData{}
+			metricsData.Name = "nebula_sqlquery_" + sql.Metrics_name + "_" + labelReplacer.Replace(strings.ToLower(valuename))
 			value_string := value_spr.String()
 			value, err := strconv.ParseFloat(value_string, 64)
 			if err != nil {
@@ -281,7 +283,7 @@ func (sql *Sqlquery) FetchForNSql(nsql string) ([]MetricsData, error) {
 				if _, ok := sql.Values_mapping[strValue_a]; ok {
 					value = sql.Values_mapping[strValue_a]
 				} else {
-					fmt.Println("The value indicator is not of numeric type, and the mapping table matching failed. The failed matching items are", strValue_a)
+					fmt.Println("The value indicator is not of numeric type, and the mapping table matching failed. The failed matching items are", strValue_a, "the sql is ", nsql)
 					continue
 				}
 			}
