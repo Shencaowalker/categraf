@@ -47,8 +47,10 @@ Categraf 是一款 All-in-One 的数据采集器，支持指标、日志采集�
 # 在categraf目录下
 #GOOS=darwin 
 #GOARCH=amd64  调整本地的golang环境变量
-
+# 整体启动调试
 go run . -configs /Users/shencao/go_workstation/src/categraf/conf
+# 单组件测试
+go run . --test --inputs  nebula  -configs /Users/shencao/go_workstation/src/categraf/conf > aaa.json
 ```
 
 ## 从源代码编译
