@@ -42,6 +42,15 @@ Categraf 是一款 All-in-One 的数据采集器，支持指标、日志采集�
 - [视频教程](https://mp.weixin.qq.com/s/T69kkBzToHVh31D87xsrIg)
 - [软件下载](https://github.com/flashcatcloud/categraf/releases)
 
+## 本地调试
+```
+# 在categraf目录下
+#GOOS=darwin 
+#GOARCH=amd64  调整本地的golang环境变量
+
+go run . -configs /Users/shencao/go_workstation/src/categraf/conf
+```
+
 ## 从源代码编译
 
 ```shell

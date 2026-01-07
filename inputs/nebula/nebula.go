@@ -253,6 +253,9 @@ func (sql *Sqlquery) FetchForNSql(nsql string) ([]MetricsData, error) {
 		labels := make(map[string]string)
 		labels["env"] = sql.Env
 		// host, err := record.GetValueByIndex(0)
+		if len(sql.Labels_names) == 0 {
+			labels["host"] = sql.Address
+		})
 		for _, label := range sql.Labels_names {
 			label_value, err := record.GetValueByColName(label)
 			if err != nil {
@@ -260,8 +263,8 @@ func (sql *Sqlquery) FetchForNSql(nsql string) ([]MetricsData, error) {
 				return dataList, err
 			}
 			labels[strings.ToLower(label)] = strings.Trim(label_value.String(), `"`)
-			fmt.Println("label_value.String() is ", strings.Trim(label_value.String(), `"`))
 		}
+
 		for _, valuename := range sql.Values_names {
 			metricsData := MetricsData{}
 			metricsData.Name = "nebula_sqlquery_" + sql.Metrics_name
@@ -421,10 +424,6 @@ func (ins *Nebula) Gather(slist *types.SampleList) {
 	}
 	waitMetrics := new(sync.WaitGroup)
 	instanceCollect := func(instance *Instance) {
-		// 验证程序输出
-		fmt.Println("the instance env is ", instance.Env)
-		// 验证程序输出
-		fmt.Println("the instance List is ", instance.List)
 
 		defer waitMetrics.Done()
 		data, getDataErr := instance.GetData(instance.InstanceMetricUrl())
@@ -486,13 +485,11 @@ func (ins *Nebula) Gather(slist *types.SampleList) {
 
 	for iter := ins.instances.Iterator(); iter.Next(); {
 		waitMetrics.Add(1)
-		fmt.Println("iter.Value().(*Instance).Env is ", iter.Value().(*Instance).Env)
 		go instanceCollect(iter.Value().(*Instance))
 	}
 
 	for iter2 := ins.sqlquerys.Iterator(); iter2.Next(); {
 		waitMetrics.Add(1)
-		fmt.Println("iter2.Value().(*Sqlquery).Env is ", iter2.Value().(*Sqlquery).Env)
 		go sqlqueryCollect(iter2.Value().(*Sqlquery))
 	}
 	waitMetrics.Wait()
