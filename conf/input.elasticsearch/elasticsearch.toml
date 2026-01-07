@@ -1,0 +1,57 @@
+# # collect interval
+# interval = 15
+
+############################################################################
+[[instances]]
+labels = { cluster="cloud-n9e-es" }
+local = false
+servers = ["http://10.5.16.101:9200"]
+username = "elastic"
+password = "yD7mZySYRWm6_W28dAet"
+http_timeout = "10s"
+all_nodes = true
+node_stats = ["jvm", "breaker", "process", "os", "fs", "indices", "thread_pool", "transport"]
+cluster_health = true
+cluster_health_level = "cluster"
+cluster_stats = true
+indices_include = ["zipkin*"]
+export_indices = true
+export_indices_settings = true
+export_indices_mappings = true
+export_indices_aliases = true
+export_ilm = true
+export_shards = true
+export_slm = true
+export_data_stream = true
+export_snapshots = true
+export_cluster_settings = true
+export_cluster_info = true
+cluster_info_interval = "5m"
+num_most_recent_indices = 1
+
+[[instances]]
+labels = { cluster="es-10.5.25.91-93" }
+local = false
+servers = ["http://10.5.25.91:9200","http://10.5.25.92:9200","http://10.5.25.93:9200"]
+username = "elastic"
+password = "VPwSrFw2lVfFokJ"
+http_timeout = "10s"
+all_nodes = true
+node_stats = ["jvm", "breaker", "process", "os", "fs", "indices", "thread_pool", "transport"]
+cluster_health = true
+cluster_health_level = "cluster"
+cluster_stats = true
+indices_include = ["zipkin*"]
+export_indices = true
+export_indices_settings = true
+export_indices_mappings = true
+export_indices_aliases = true
+export_ilm = true
+export_shards = true
+export_slm = true
+export_data_stream = true
+export_snapshots = true
+export_cluster_settings = true
+export_cluster_info = true
+cluster_info_interval = "5m"
+num_most_recent_indices = 1

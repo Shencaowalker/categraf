@@ -1,0 +1,20 @@
+[[instances]]
+env = "demo"
+list = [ "10.5.100.1"]
+metricsport=19559
+urlsuffix = "/stats"
+role="metad"
+
+[[instances]]
+env = "demo"
+list =  [ "10.5.100.1","10.5.100.110","10.5.100.111"]
+metricsport=19669
+urlsuffix = "/stats"
+role="graphd"
+
+[[instances]]
+env = "demo"
+list = [ "10.5.100.1","10.5.100.110","10.5.100.111"]
+metricsport=19779
+urlsuffix = "/stats"
+role="storaged"
