@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	// Blank import required to register driver
 	"flashcat.cloud/categraf/inputs"
@@ -41,7 +42,7 @@ type Nebula struct {
 }
 type Sqlquery struct {
 	Env            string             `toml:"env"`
-	Address        string             `toml:"address"`
+	Addresss       []string           `toml:"address"`
 	Port           int                `toml:"port"`
 	Username       string             `toml:"username"`
 	Password       string             `toml:"password"`
@@ -85,7 +86,6 @@ func (ins *Nebula) Init() error {
 	for _, sqlqueryOption := range ins.Sqlquerys {
 		ins.sqlquerys.Add(&sqlqueryOption)
 	}
-
 	return nil
 }
 
@@ -203,15 +203,54 @@ func (ins *Instance) FetchData(data map[string]string) ([]MetricsData, error) {
 	return dataList, nil
 }
 
+// // init initializes the session pool.
+// // Modify the session-tool.go file to support traversing graph nodes without reporting errors and exiting
+// // 函数路径nebula-go/v3@v3.8.0/session_pool.go
+
+// func (pool *SessionPool) init() error {
+// 	// check the hosts status
+// 	var err_string error
+// 	var count int
+// 	if err := checkAddresses(pool.conf.timeOut, pool.conf.serviceAddrs, pool.conf.sslConfig,
+// 		pool.conf.useHTTP2, pool.conf.httpHeader, pool.conf.handshakeKey); err != nil {
+// 		err_string = fmt.Errorf("failed to initialize the session pool, %s", err.Error())
+// 	}
+
+// 	// create sessions to fulfill the min pool size
+//  // 结合nebula_client.WithMinSize(3)提升容错率
+// 	for i := 0; i < pool.conf.minSize; i++ {
+// 		session, err := pool.newSession()
+// 		if err != nil {
+// 			err_string = fmt.Errorf("failed to initialize the session pool, %s", err.Error())
+// 			count++
+// 			continue
+// 		}
+
+//			session.returnedAt = time.Now()
+//			pool.addSessionToIdle(session)
+//		}
+//		if count == pool.conf.minSize {
+//			return err_string
+//		} else {
+//			return nil
+//		}
+//	}
 func (sql *Sqlquery) FetchForNSql(nsql string) ([]MetricsData, error) {
 	dataList := make([]MetricsData, 0)
-	hostAddress := nebula_client.HostAddress{Host: sql.Address, Port: sql.Port}
+	hostAddresss := make([]nebula_client.HostAddress, 0)
+	for _, hostName := range sql.Addresss {
+		hostAddress := nebula_client.HostAddress{Host: hostName, Port: sql.Port}
+		hostAddresss = append(hostAddresss, hostAddress)
+	}
 	config, err := nebula_client.NewSessionPoolConf(
 		sql.Username,
 		sql.Password,
-		[]nebula_client.HostAddress{hostAddress},
+		hostAddresss,
 		sql.Spacename,
 		nebula_client.WithHTTP2(sql.UseHTTP2),
+		nebula_client.WithMinSize(3),
+		nebula_client.WithTimeOut(2*time.Second),
+		// nebula_client.WithTimeOut(3*time.Millisecond),
 	)
 	if err != nil {
 		fmt.Sprintf("failed to create session pool config, %s", err.Error())
@@ -257,7 +296,7 @@ func (sql *Sqlquery) FetchForNSql(nsql string) ([]MetricsData, error) {
 		labels["env"] = sql.Env
 		// host, err := record.GetValueByIndex(0)
 		if len(sql.Labels_names) == 0 {
-			labels["host"] = sql.Address
+			labels["host"] = strings.Join(sql.Addresss, "_")
 		}
 		for _, label := range sql.Labels_names {
 			label_value, err := record.GetValueByColName(label)

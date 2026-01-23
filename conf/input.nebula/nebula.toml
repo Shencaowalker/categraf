@@ -1,6 +1,6 @@
 [[sqlquerys]]
 env = "demo"
-address="10.5.16.131"
+address=["10.5.100.113","10.5.100.112","10.5.100.114"]
 port= 9669
 username = "root"
 password = "nebula"
@@ -17,7 +17,7 @@ values_mapping = {ONLINE = 1,OFFLINE = 0}
 
 [[sqlquerys]]
 env = "test"
-address="10.5.100.1"
+address=["10.5.100.1","10.5.100.110","10.5.100.111"]
 port= 9669
 username = "root"
 password = "nebula"
@@ -26,7 +26,7 @@ spacename = "bigmeta_release"
 sql_script = "show hosts"
 metrics_name="cluster_status"
 labels_names= [ "Host","Status","Leader distribution","Partition distribution","Version"]
-values_names=["Leader count","Status1"]
+values_names=["Leader count","Status"]
 values_mapping = {OFFLINE = 0,ONLINE = 1}
 
 
@@ -50,3 +50,4 @@ list = [ "10.5.100.1","10.5.100.110","10.5.100.111"]
 metricsport=19779
 urlsuffix = "/stats"
 role="storaged"
+
