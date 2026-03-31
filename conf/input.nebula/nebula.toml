@@ -1,53 +1,53 @@
 [[sqlquerys]]
-env = "demo"
-address=["10.5.100.113","10.5.100.112","10.5.100.114"]
+env = 'demo'
+address=['10.5.100.113','10.5.100.112','10.5.100.114']
 port= 9669
-username = "root"
-password = "nebula"
+username = 'root'
+password = 'nebula'
 useHTTP2 = false
-spacename = "bigmetademonew"
-sql_script = "show hosts meta"
-metrics_name="cluster_metad_status"
+spacename = 'bigmetademonew'
+sql_script = 'show hosts meta'
+metrics_name='cluster_metad_status'
 # 对应于下面的values_names。都会加上labels_names中所有字段为标签，标签key会自动小写并替换空格为_
-labels_names= [ "Host","Port","Role","Git Info Sha","Version"]
+labels_names= [ 'Host','Port','Role','Git Info Sha','Version']
 # values_names数组，可以为多个
-values_names=["Status"]
+values_names=['Status']
 # values_names数组的值 不为数字类型时字符串类型时，需要人工在values_mapping中进行对数字的映射，方便后续监控指标上报
 values_mapping = {ONLINE = 1,OFFLINE = 0}
 
 [[sqlquerys]]
-env = "test"
-address=["10.5.100.1","10.5.100.110","10.5.100.111"]
+env = 'test'
+address=['10.5.100.1','10.5.100.110','10.5.100.111']
 port= 9669
-username = "root"
-password = "nebula"
+username = 'root'
+password = 'nebula'
 useHTTP2 = false
-spacename = "bigmeta_release"
-sql_script = "show hosts"
-metrics_name="cluster_status"
-labels_names= [ "Host","Status","Leader distribution","Partition distribution","Version"]
-values_names=["Leader count","Status"]
+spacename = 'bigmeta_release'
+sql_script = 'show hosts'
+metrics_name='cluster_status'
+labels_names= [ 'Host','Status','Leader distribution','Partition distribution','Version']
+values_names=['Leader count','Status']
 values_mapping = {OFFLINE = 0,ONLINE = 1}
 
 
 [[instances]]
-env = "demo"
-list = [ "10.5.100.1"]
+env = 'demo'
+list = ['10.5.100.1']
 metricsport=19559
-urlsuffix = "/stats"
-role="metad"
+urlsuffix = '/stats'
+role='metad'
 
 [[instances]]
-env = "demo"
-list =  [ "10.5.100.1","10.5.100.110","10.5.100.111"]
+env = 'demo'
+list = ['10.5.100.1','10.5.100.110','10.5.100.111']
 metricsport=19669
-urlsuffix = "/stats"
-role="graphd"
+urlsuffix = '/stats'
+role='graphd'
 
 [[instances]]
-env = "demo"
-list = [ "10.5.100.1","10.5.100.110","10.5.100.111"]
+env = 'demo'
+list = ['10.5.100.1','10.5.100.110','10.5.100.111']
 metricsport=19779
-urlsuffix = "/stats"
-role="storaged"
+urlsuffix = '/stats'
+role='storaged'
 
