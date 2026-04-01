@@ -97,7 +97,7 @@ meta_dir = "./meta"
 enable = true
 
 # report os version cpu.util mem.util metadata
-url = "http://10.5.20.34:17000/v1/n9e/heartbeat"
+url = "http://10.5.40.41:17000/v1/n9e/heartbeat"
 
 # interval, unit: s
 interval = 10

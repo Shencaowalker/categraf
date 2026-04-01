@@ -1,0 +1,145 @@
+[[instances]]
+url = "http://10.5.20.35:3100"
+timeout = "3s"
+ingest_delay = "60s"
+overlap = "15s"
+lookback = "10m"
+limit = 1000
+direction = "forward"
+state_file = "/tmp/categraf-lokimtail/as-demo-request-info.json"
+static_labels = { project = "as", environment = "demo" }
+
+  [[instances.rules]]
+  name = "canrequest_ui_cost_total"
+  selector = '{project="as",environment="demo",filename="/data/logs/request_info.log"}'
+  regex = '(\d+-\d+-\d+\s\S+)\s\[(.*?)\]\s\[(.*?)\]\s\[.*?\]\s\w+\s+(\S+)\s-\s(.*?)\|(.*?)\|(.*?)\|(.*?)\|(.*?)\|(.*?)\|(.*?)\|(.*?)\|.*?'
+  label_names = [
+    "starttime",
+    "traceidwithskywalking",
+    "traceidwiithaloudata",
+    "api",
+    "url",
+    "selfstatus",
+    "ip",
+    "cost",
+    "responsecode",
+    "tnid",
+    "userid",
+    "selfcode",
+  ]
+  metric_labels = ["url", "responsecode", "selfcode"]
+  metric = "canrequest_ui_cost_total"
+  value_from = "cost"
+
+  [[instances.rules]]
+  name = "canrequest_ui_sum_total"
+  selector = '{project="as",environment="demo",filename="/data/logs/request_info.log"}'
+  regex = '(\d+-\d+-\d+\s\S+)\s\[(.*?)\]\s\[(.*?)\]\s\[.*?\]\s\w+\s+(\S+)\s-\s(.*?)\|(.*?)\|(.*?)\|(.*?)\|(.*?)\|(.*?)\|(.*?)\|(.*?)\|.*?'
+  label_names = [
+    "starttime",
+    "traceidwithskywalking",
+    "traceidwiithaloudata",
+    "api",
+    "url",
+    "selfstatus",
+    "ip",
+    "cost",
+    "responsecode",
+    "tnid",
+    "userid",
+    "selfcode",
+  ]
+  metric_labels = ["url", "responsecode", "selfcode"]
+  metric = "canrequest_ui_sum_total"
+  value = 1
+
+[[instances]]
+url = "http://10.5.20.35:3100"
+timeout = "3s"
+ingest_delay = "60s"
+overlap = "15s"
+lookback = "10m"
+limit = 1000
+direction = "forward"
+state_file = "/tmp/categraf-lokimtail/as-stable-request-info.json"
+static_labels = { project = "as", environment = "stable" }
+
+  [[instances.rules]]
+  name = "tse_sql_cost_total"
+  selector = '{filename="/data/logs/tse_info.log",job="tse-can-stable",project="as"} |~ `com.aloudata.tse.tasks.sql.SQLTaskProcessor`'
+  regex = '^(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3})\s+\[[^\]]*\]\s+\[\]\s+\[[^\]]*\]\s+(\S+)\s+(\S+)\s+-\s+([^|]+)\|(\d+)\|\d+\|(\d+)\|.*$'
+  label_names = [
+    "starttime",
+    "log_level",
+    "api",
+    "model",
+    "taskid",
+    "cost",
+  ]
+  metric_labels = ["log_level", "api", "model","taskid"]
+  metric = "tse_sql_cost_total"
+  value_from = "cost"
+
+  [[instances.rules]]
+  name = "tse_sql_sum_total"
+  selector = '{filename="/data/logs/tse_info.log",job="tse-can-stable",project="as"} |~ `com.aloudata.tse.tasks.sql.SQLTaskProcessor`'
+  regex = '^(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3})\s+\[[^\]]*\]\s+\[\]\s+\[[^\]]*\]\s+(\S+)\s+(\S+)\s+-\s+([^|]+)\|(\d+)\|\d+\|(\d+)\|.*$'
+  label_names = [
+    "starttime",
+    "log_level",
+    "api",
+    "model",
+    "taskid",
+    "cost",
+  ]
+  metric_labels = ["log_level", "api", "model","taskid"]
+  metric = "tse_sql_sum_total"
+  value = 1
+
+  [[instances.rules]]
+  name = "tse_spark_cost_total"
+  selector = '{filename="/data/logs/tse_info.log",job="tse-can-stable",project="as"} |~ `com.aloudata.tse.tasks.spark.sql.SparkSubmitSqlTaskProcessor`'
+  regex = '^(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3})\s+\[[^\]]*\]\s+\[\]\s+\[[^\]]*\]\s+(\S+)\s+(\S+)\s+-\s+([^|]+)\|(\d+)\|\d+\|(\d+)\|.*$'
+  label_names = [
+    "starttime",
+    "log_level",
+    "api",
+    "model",
+    "taskid",
+    "cost",
+  ]
+  metric_labels = ["log_level", "api", "model","taskid"]
+  metric = "tse_spark_cost_total"
+  value_from = "cost"
+
+  [[instances.rules]]
+  name = "tse_spark_sum_total"
+  selector = '{filename="/data/logs/tse_info.log",job="tse-can-stable",project="as"} |~ `com.aloudata.tse.tasks.spark.sql.SparkSubmitSqlTaskProcessor`'
+  regex = '^(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3})\s+\[[^\]]*\]\s+\[\]\s+\[[^\]]*\]\s+(\S+)\s+(\S+)\s+-\s+([^|]+)\|(\d+)\|\d+\|(\d+)\|.*$'
+  label_names = [
+    "starttime",
+    "log_level",
+    "api",
+    "model",
+    "taskid",
+    "cost",
+  ]
+  metric_labels = ["log_level", "api", "model","taskid"]
+  metric = "tse_spark_sum_total"
+  value = 1
+
+  [[instances.rules]]
+  name = "tse_spark_cost_total"
+  selector = '{filename="/data/logs/tse_info.log",job="tse-can-stable",project="as"} |~ `com.aloudata.tse.tasks.spark.sql.SparkSubmitSqlTaskProcessor`'
+  regex = '^(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3})\s+\[[^\]]*\]\s+\[\]\s+\[[^\]]*\]\s+(\S+)\s+(\S+)\s+-\s+([^|]+)\|(\d+)\|\d+\|(\d+)\|.*$'
+  label_names = [
+    "starttime",
+    "log_level",
+    "api",
+    "model",
+    "taskid",
+    "cost",
+  ]
+  metric_labels = ["log_level", "api", "model","taskid"]
+  metric = "tse_spark_cost_total"
+  value_from = "cost"

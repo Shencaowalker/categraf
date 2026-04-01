@@ -58,6 +58,7 @@ import (
 	_ "flashcat.cloud/categraf/inputs/ldap"
 	_ "flashcat.cloud/categraf/inputs/linux_sysctl_fs"
 	_ "flashcat.cloud/categraf/inputs/logstash"
+	_ "flashcat.cloud/categraf/inputs/lokimtail"
 	_ "flashcat.cloud/categraf/inputs/mem"
 	_ "flashcat.cloud/categraf/inputs/mongodb"
 	_ "flashcat.cloud/categraf/inputs/mtail"
