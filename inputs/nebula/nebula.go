@@ -236,19 +236,33 @@ func (ins *Instance) FetchData(data map[string]string) ([]MetricsData, error) {
 //		}
 //	}
 func (sql *Sqlquery) FetchForNSql(nsql string) ([]MetricsData, error) {
-	dataList := make([]MetricsData, 0)
-	hostAddresss := make([]nebula_client.HostAddress, 0)
+	var lastErr error
 	for _, hostName := range sql.Addresss {
 		hostAddress := nebula_client.HostAddress{Host: hostName, Port: sql.Port}
-		hostAddresss = append(hostAddresss, hostAddress)
+		dataList, err := sql.fetchForNSqlWithHosts(nsql, []nebula_client.HostAddress{hostAddress})
+		if err == nil {
+			return dataList, nil
+		}
+		lastErr = err
+		log.Printf("W! nebula sqlquery failed on graph %s:%d env=%s sql=%s error=%v",
+			hostName, sql.Port, sql.Env, nsql, err)
 	}
+
+	if lastErr != nil {
+		return nil, fmt.Errorf("all graph addresses failed for env=%s sql=%s: %w", sql.Env, nsql, lastErr)
+	}
+	return nil, fmt.Errorf("no graph address configured for env=%s sql=%s", sql.Env, nsql)
+}
+
+func (sql *Sqlquery) fetchForNSqlWithHosts(nsql string, hostAddresss []nebula_client.HostAddress) ([]MetricsData, error) {
+	dataList := make([]MetricsData, 0)
 	config, err := nebula_client.NewSessionPoolConf(
 		sql.Username,
 		sql.Password,
 		hostAddresss,
 		sql.Spacename,
 		nebula_client.WithHTTP2(sql.UseHTTP2),
-		nebula_client.WithMinSize(3),
+		nebula_client.WithMinSize(1),
 		nebula_client.WithTimeOut(2*time.Second),
 		// nebula_client.WithTimeOut(3*time.Millisecond),
 	)
@@ -263,26 +277,24 @@ func (sql *Sqlquery) FetchForNSql(nsql string) ([]MetricsData, error) {
 		return dataList, err
 	}
 	defer sessionPool.Close()
-	checkResultSet := func(prefix string, res *nebula_client.ResultSet) {
+	checkResultSet := func(prefix string, res *nebula_client.ResultSet) error {
+		if res == nil {
+			return fmt.Errorf("%s, empty result set", prefix)
+		}
 		if !res.IsSucceed() {
-			fmt.Sprintf("%s, ErrorCode: %v, ErrorMsg: %s", prefix, res.GetErrorCode(), res.GetErrorMsg())
-			return
+			return fmt.Errorf("%s, ErrorCode: %v, ErrorMsg: %s", prefix, res.GetErrorCode(), res.GetErrorMsg())
 		}
+		return nil
 	}
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	var resultSet *nebula_client.ResultSet
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
-		resultSet, err = sessionPool.Execute(nsql)
-		if err != nil {
-			fmt.Print(err.Error())
-			return
-		}
-		checkResultSet(nsql, resultSet)
-		// personList: [{Bob 10 97.2} {Bob 10 80} {Bob 10 70}]
-	}(&wg)
-	wg.Wait()
+
+	resultSet, err := sessionPool.Execute(nsql)
+	if err != nil {
+		return dataList, err
+	}
+	if err := checkResultSet(nsql, resultSet); err != nil {
+		return dataList, err
+	}
+	// personList: [{Bob 10 97.2} {Bob 10 80} {Bob 10 70}]
 	colNames := resultSet.GetColNames()
 	fmt.Printf("column names: %s\n", strings.Join(colNames, ", "))
 
@@ -477,6 +489,11 @@ func (ins *Nebula) Gather(slist *types.SampleList) {
 	instanceCollect := func(instance *Instance) {
 
 		defer waitMetrics.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("E! nebula instance gather panic: env=%s role=%s err=%v", instance.Env, instance.Role, r)
+			}
+		}()
 		data, getDataErr := instance.GetData(instance.InstanceMetricUrl())
 		if getDataErr != nil {
 			log.Printf("E! Failed to get data from %s: %v", instance.Env, getDataErr)
@@ -520,6 +537,11 @@ func (ins *Nebula) Gather(slist *types.SampleList) {
 
 	sqlqueryCollect := func(sql *Sqlquery) {
 		defer waitMetrics.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("E! nebula sqlquery gather panic: env=%s sql=%s err=%v", sql.Env, sql.Sql_script, r)
+			}
+		}()
 		res, fetchDataErr := sql.FetchForNSql(sql.Sql_script)
 		if fetchDataErr != nil {
 			log.Printf("E! Failed to fetch data from %s: %v", sql.Env, fetchDataErr)

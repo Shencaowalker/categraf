@@ -96,9 +96,8 @@ func (c *Component) GetData(urlList map[string]string) (map[string]interface{}, 
 			continue
 		}
 		// fmt.Println("the data is ", data)
-		var f = make(map[string]interface{})
-		// fmt.Println("the data is", data)
-		if err := json.Unmarshal(data, &f); err != nil {
+		f, err := parseJMXData(data)
+		if err != nil {
 			// return nil, fmt.Errorf("parse json failed: %v", err)
 			continue
 		}
@@ -109,6 +108,86 @@ func (c *Component) GetData(urlList map[string]string) (map[string]interface{}, 
 	// fmt.Println("the f_all is", f_all)
 	return f_all, nil
 
+}
+
+func parseJMXData(data []byte) (map[string]interface{}, error) {
+	var f = make(map[string]interface{})
+	err := json.Unmarshal(data, &f)
+	if err == nil {
+		return f, nil
+	}
+
+	f = make(map[string]interface{})
+	err = json.Unmarshal(cleanJMXNonFiniteNumbers(data), &f)
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
+}
+
+func cleanJMXNonFiniteNumbers(data []byte) []byte {
+	out := make([]byte, 0, len(data))
+	inString := false
+	escaped := false
+
+	for i := 0; i < len(data); {
+		ch := data[i]
+		if inString {
+			out = append(out, ch)
+			if escaped {
+				escaped = false
+			} else if ch == '\\' {
+				escaped = true
+			} else if ch == '"' {
+				inString = false
+			}
+			i++
+			continue
+		}
+
+		if ch == '"' {
+			inString = true
+			out = append(out, ch)
+			i++
+			continue
+		}
+
+		switch {
+		case matchesJSONToken(data, i, "-Infinity"):
+			out = append(out, "null"...)
+			i += len("-Infinity")
+		case matchesJSONToken(data, i, "Infinity"):
+			out = append(out, "null"...)
+			i += len("Infinity")
+		case matchesJSONToken(data, i, "NaN"):
+			out = append(out, "null"...)
+			i += len("NaN")
+		default:
+			out = append(out, ch)
+			i++
+		}
+	}
+
+	return out
+}
+
+func matchesJSONToken(data []byte, offset int, token string) bool {
+	if offset+len(token) > len(data) || string(data[offset:offset+len(token)]) != token {
+		return false
+	}
+	return isJSONTokenBoundary(data, offset-1) && isJSONTokenBoundary(data, offset+len(token))
+}
+
+func isJSONTokenBoundary(data []byte, offset int) bool {
+	if offset < 0 || offset >= len(data) {
+		return true
+	}
+	switch data[offset] {
+	case ' ', '\n', '\r', '\t', ':', ',', '[', ']', '{', '}':
+		return true
+	default:
+		return false
+	}
 }
 
 func (c *Component) FetchData(data map[string]interface{}) ([]MetricsData, error) {
@@ -298,8 +377,7 @@ func (e *Component) getDataWithSpnego(urlList map[string]string) (map[string]int
 			// return nil, errors.New(errInfo)
 			continue
 		}
-		var f = make(map[string]interface{})
-		err = json.Unmarshal(data, &f)
+		f, err := parseJMXData(data)
 		if err != nil {
 			// return nil, errors.New("parse json failed")
 			continue
