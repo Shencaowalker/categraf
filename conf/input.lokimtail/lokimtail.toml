@@ -4,6 +4,8 @@ timeout = "3s"
 ingest_delay = "60s"
 overlap = "15s"
 lookback = "10m"
+# max_query_range caps a single Loki query_range request. Keep this below Loki's query length limit.
+# max_query_range = "720h"
 limit = 1000
 direction = "forward"
 state_file = "/tmp/categraf-lokimtail/as-demo-request-info.json"
@@ -59,6 +61,8 @@ timeout = "3s"
 ingest_delay = "60s"
 overlap = "15s"
 lookback = "10m"
+# max_query_range caps a single Loki query_range request. Keep this below Loki's query length limit.
+# max_query_range = "720h"
 limit = 1000
 direction = "forward"
 state_file = "/tmp/categraf-lokimtail/as-stable-request-info.json"

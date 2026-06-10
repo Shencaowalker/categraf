@@ -27,6 +27,8 @@ import (
 
 const inputName = "lokimtail"
 
+const defaultMaxQueryRange = 720 * time.Hour
+
 type LokiMTail struct {
 	config.PluginConfig
 	Instances []*Instance `toml:"instances"`
@@ -56,6 +58,7 @@ type Instance struct {
 	IngestDelay   config.Duration   `toml:"ingest_delay"`
 	Overlap       config.Duration   `toml:"overlap"`
 	Lookback      config.Duration   `toml:"lookback"`
+	MaxQueryRange config.Duration   `toml:"max_query_range"`
 	Limit         int               `toml:"limit"`
 	Direction     string            `toml:"direction"`
 	StateFile     string            `toml:"state_file"`
@@ -138,11 +141,17 @@ func (ins *Instance) Init() error {
 	if ins.Lookback <= 0 {
 		ins.Lookback = config.Duration(5 * time.Minute)
 	}
+	if ins.MaxQueryRange <= 0 {
+		ins.MaxQueryRange = config.Duration(defaultMaxQueryRange)
+	}
 	if ins.Limit <= 0 {
 		ins.Limit = 1000
 	}
 	if ins.Direction == "" {
 		ins.Direction = "forward"
+	}
+	if ins.Direction != "forward" {
+		return errors.New("direction must be forward")
 	}
 	if ins.MaxDedupItems <= 0 {
 		ins.MaxDedupItems = 50000
@@ -153,7 +162,12 @@ func (ins *Instance) Init() error {
 	ins.InitHTTPClientConfig()
 	ins.Timeout = maxDuration(ins.Timeout, config.Duration(3*time.Second))
 
+	ruleNames := make(map[string]struct{}, len(ins.Rules))
 	for _, rule := range ins.Rules {
+		if _, ok := ruleNames[rule.Name]; ok && rule.Name != "" {
+			return fmt.Errorf("duplicate rule name %q", rule.Name)
+		}
+		ruleNames[rule.Name] = struct{}{}
 		if err := rule.init(); err != nil {
 			return err
 		}
@@ -239,11 +253,14 @@ func (ins *Instance) Gather(slist *types.SampleList) {
 		ruleState := ins.state.ensureRule(rule.Name)
 		startNs := ins.initialStart(ruleState, queryEnd)
 		endNs := queryEnd.UnixNano()
+		if maxEndNs := time.Unix(0, startNs).Add(time.Duration(ins.MaxQueryRange)).UnixNano(); maxEndNs < endNs {
+			endNs = maxEndNs
+		}
 		if startNs > endNs {
 			continue
 		}
 
-		entries, err := ins.queryRange(rule, startNs, endNs)
+		entries, complete, err := ins.queryRangeAll(rule, startNs, endNs)
 		if err != nil {
 			log.Println("E! lokimtail query failed:", rule.Name, err)
 			continue
@@ -275,8 +292,14 @@ func (ins *Instance) Gather(slist *types.SampleList) {
 			slist.PushFront(types.NewSample("", metric, value, labels))
 		}
 
+		if !complete {
+			log.Printf("W! lokimtail query may be truncated for rule %s, cursor not advanced to avoid skipping logs", rule.Name)
+			continue
+		}
 		if maxTs > 0 {
 			ruleState.CursorTs = maxTs
+		} else if len(entries) == 0 && endNs > ruleState.CursorTs {
+			ruleState.CursorTs = endNs
 		}
 	}
 
@@ -298,6 +321,34 @@ func (ins *Instance) initialStart(rs *ruleState, queryEnd time.Time) int64 {
 		return 0
 	}
 	return start
+}
+
+func (ins *Instance) queryRangeAll(rule *Rule, startNs, endNs int64) ([]logEntry, bool, error) {
+	return ins.queryRangeSplit(rule, startNs, endNs)
+}
+
+func (ins *Instance) queryRangeSplit(rule *Rule, startNs, endNs int64) ([]logEntry, bool, error) {
+	entries, err := ins.queryRange(rule, startNs, endNs)
+	if err != nil {
+		return nil, false, err
+	}
+	if len(entries) < ins.Limit {
+		return entries, true, nil
+	}
+	if startNs >= endNs {
+		return entries, false, nil
+	}
+
+	midNs := startNs + (endNs-startNs)/2
+	left, leftComplete, err := ins.queryRangeSplit(rule, startNs, midNs)
+	if err != nil {
+		return nil, false, err
+	}
+	right, rightComplete, err := ins.queryRangeSplit(rule, midNs+1, endNs)
+	if err != nil {
+		return nil, false, err
+	}
+	return append(left, right...), leftComplete && rightComplete, nil
 }
 
 func (ins *Instance) queryRange(rule *Rule, startNs, endNs int64) ([]logEntry, error) {
